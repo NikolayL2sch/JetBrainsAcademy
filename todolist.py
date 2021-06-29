@@ -24,20 +24,25 @@ Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-print("1) Today's tasks\n2) Week's tasks\n3) All tasks\n4) Add task\n0) Exit")
 while True:
-    dec = input()
+    dec = input("1) Today's tasks\n"
+                "2) Week's tasks\n"
+                "3) All tasks\n"
+                "4) Missed tasks\n"
+                "5) Add task\n"
+                "6) Delete task\n"
+                "0) Exit\n")
     if dec == '':
         break
     elif dec == '0':
-        print('Bye')
+        print('Bye!')
         break
     elif dec == '1':
         rows = session.query(Table).all()
         print('Today', datetime.today().day, datetime.today().strftime('%b'))
         today_tasks = []
         for elem in rows:
-            if elem.deadline == datetime.date(datetime.today()):
+            if elem.deadline == datetime.today().date():
                 today_tasks.append(elem.task)
         if not today_tasks:
             print('Nothing to do!')
@@ -46,7 +51,7 @@ while True:
                 print(f'{i + 1}. {today_tasks[i]}')
     elif dec == '2':
         rows = session.query(Table).all()
-        week = [str(datetime.date(datetime.today() + timedelta(days=i))) for i in range(7)]
+        week = [str(datetime.today().date() + timedelta(days=i)) for i in range(7)]
         week_tasks = {str((datetime.date(datetime.today() + timedelta(days=i)))): [] for i in range(7)}
         for elem in rows:
             if str(elem.deadline) in week:
@@ -67,6 +72,14 @@ while True:
         for i in range(len(rows)):
             print(f'{i + 1}. {rows[i].task}. {rows[i].deadline.day} {rows[i].deadline.strftime("%b")}')
     elif dec == '4':
+        print('Missed tasks:')
+        rows = session.query(Table).filter(Table.deadline < datetime.today().date()).all()
+        for i in range(len(rows)):
+            print(f'{i + 1}. {rows[i].task} {rows[i].deadline.day} {rows[i].deadline.strftime("%b")}')
+        if len(rows) == 0:
+            print('Nothing is missed!')
+        print()
+    elif dec == '5':
         print('Enter task')
         task = input()
         print('Enter deadline')
@@ -75,3 +88,11 @@ while True:
         session.add(new_row)
         session.commit()
         print('The task has been added!')
+    elif dec == '6':
+        print('Choose the number of the task you want to delete:')
+        rows = session.query(Table).order_by(Table.deadline).all()
+        for i in range(len(rows)):
+            print(f'{i + 1}. {rows[i].task}. {rows[i].deadline.day} {rows[i].deadline.strftime("%b")}')
+        _ = int(input())
+        session.delete(rows[_ - 1])
+        session.commit()
